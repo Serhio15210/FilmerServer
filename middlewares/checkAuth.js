@@ -6,9 +6,9 @@ const firebase = require("firebase-admin");
   const token = (req.headers.authorization || '').replace('/Bearer\s?/', '')
 
 
-
+   // console.log('token',token)
   if (token) {
-    // console.log('token',token)
+
     //   console.log(jwt.verify(token, 'secret123'))
     try {
       const decoded = jwt.verify(token, 'secret123')

@@ -14,8 +14,8 @@ router.delete('/:id', checkAuth, idHeaderValidator, ListController.deleteById)
 router.patch('/:id', checkAuth, idHeaderValidator, ListController.updateById)
 router.post('/subscribe', checkAuth, idValidator, ListController.subscribe)
 router.post('/unsubscribe', checkAuth, idValidator, ListController.unsubscribe)
-router.post('/addFilm', checkAuth, idValidator, checkFilm, ListController.addFilm)
-router.post('/addFilms', checkAuth, idValidator, checkList, ListController.addFilms)
+router.post('/addFilm', checkAuth, checkFilm, ListController.addFilm)
+router.post('/addFilms', checkAuth, checkList, ListController.addFilms)
 router.post('/deleteFilm', checkAuth, idValidator, ListController.deleteFilm)
 
 module.exports = router

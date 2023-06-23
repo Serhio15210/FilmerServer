@@ -27,11 +27,12 @@ const {
   registerValidator, updateValidator
 } = require("./validations/validations.js")
 
-const {startMovieMonitoring, sendPushNotification}=require("./fcm/services")
+const {startMovieMonitoring, sendPushNotification, deleteOldNotifications}=require("./fcm/services")
+const UserModel = require("./models/User");
 const PORT=process.env.PORT||8000
 const MONGOOSE_DB=process.env.MONGOOSE_DB
-
-mongoose.connect(MONGOOSE_DB).then(res => {
+const multer = require('multer');
+mongoose.connect('mongodb+srv://serhio:1356810@filmer.pvpls.mongodb.net/?retryWrites=true&w=majority').then(res => {
   console.log("connect to db")
 })
 const app = express()
@@ -45,16 +46,53 @@ app.listen(PORT, (err) => {
     console.log("connect")
   }
 })
-startMovieMonitoring()
+// startMovieMonitoring()
+// deleteOldNotifications()
 
-const rule = new schedule.RecurrenceRule();
-rule.hour = 0; // Запускать задачу в полночь
-rule.minute = 0;
-rule.second = 0;
 app.use('/auth', authRouter)
 app.use('/lists', listRouter)
 app.use('/films', filmRouter)
 
+app.get('/subscribers/:id', UserController.getSubscribers)
+app.get('/subscriptions/:id', UserController.getSubscriptions)
+
+
+
+// const storage = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//     cb(null, 'uploads/');
+//   },
+//   filename: function (req, file, cb) {
+//     const ext = file.originalname;
+//     const filename = `${new Date().getTime()}${file.originalname}`;
+//     cb(null, filename);
+//   },
+// });
+
+// const upload = multer({ storage: storage });
+
+// app.post('/profile/cameras/addCamera', upload.single('cameraPhoto'), async (req, res) => {
+//   console.log('body', req.body);
+//   console.log('files', req.file);
+//   try {
+//     // let newCamera = new Camera({
+//     //   UserId: req.user.data,
+//     //   CameraPhoto: req.file.path,
+//     //   Category: req.body.Category,
+//     //   CameraURL: req.body.CameraURL,
+//     //   Location: JSON.parse(req.body.Location),
+//     //   CameraName: req.body.CameraName,
+//     // });
+//     // await newCamera.save();
+//     res.json({ status: 'success', text: 'camera added' });
+//   } catch (e) {
+//     console.log(e);
+//     res.status(500).json({
+//       type: 'Error',
+//       data: [{ text: 'internalServerError' }],
+//     });
+//   }
+// });
 // sendPushNotification("cKye4NB3R9SY1JHwtIdGKs:APA91bEFmxAL1IRGuyeJq14AZYXoBP2TfbvVnTbSISOjW3oXnK7hbvOnPn2Tn_NqaWi5VEvJYbAXV9cjeS_TIHCth4cGrAy75PaYG6afby4yWHjL6JuBHzK_m5qOZDXrdnMXAdZy8CO6", {
 //   title: 'Новый подписчик',
 //   body: `Пользователь  подписался на вас!`,
@@ -82,10 +120,6 @@ app.use('/films', filmRouter)
 // app.post('/auth/deleteFilm', checkAuth,filmValidator,checkFilm,checkDeleteFilm, UserController.deleteFilm)
 //
 // app.post('/auth/getProfile', checkAuth, UserController.getProfile)
-
-app.get('/subscribers/:id', UserController.getSubscribers)
-app.get('/subscriptions/:id', UserController.getSubscriptions)
-
 // app.post('/lists', checkAuth, ListController.getAll)
 // app.post('/lists/create', checkAuth,listValidator,checkList, ListController.createList)
 // app.get('/lists', checkAuth, ListController.getAll)
@@ -106,22 +140,18 @@ app.get('/subscriptions/:id', UserController.getSubscriptions)
 // app.post('/films/deleteAloneFilm', checkAuth, FilmController.deleteAloneFilm)
 // app.post('/films/getFilm', checkAuth, FilmController.getFilm)
 // app.post('/films/reviews', checkAuth, FilmController.getReviews)
-const deleteOldNotificationsJob = schedule.scheduleJob(rule, async () => {
-  try {
+// const users = [];
+//
+// for (let i = 0; i < 100000; i++) {
+//   const userName = `user${i + 1}`;
+//   const email = `user${i + 1}@example.com`;
+//   const password = `password${i + 1}`;
+//
+//   users.push({ userName, email, password });
+// }
+//
+// // Вставка користувачів в колекцію
+// UserModel.insertMany(users);
 
-    const currentDate = new Date();
 
-    const oneDayAgo = new Date(currentDate.getTime() - 5 * 60 * 60 * 1000);
-
-    await NotificationModel.deleteMany({ createdAt: { $lt: oneDayAgo } });
-
-    console.log('Старые уведомления успешно удалены');
-  } catch (error) {
-    console.error('Ошибка при удалении старых уведомлений:', error);
-  }
-});
-process.on('SIGINT', () => {
-  deleteOldNotificationsJob.cancel();
-  process.exit();
-});
 

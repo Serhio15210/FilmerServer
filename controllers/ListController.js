@@ -3,6 +3,7 @@ const {validationResult} = require("express-validator");
 
 const createList = async (req, res) => {
   try {
+    const start = Date.now();
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
       return res.status(400).json(errors.array())
@@ -20,6 +21,10 @@ const createList = async (req, res) => {
 
     })
     const newList = await doc.save()
+    const end = Date.now();
+    const responseTime = end - start;
+
+    console.log(`Час відклику запиту createList: ${responseTime} мс`);
     res.json({
       success: true,
       _id: newList._id
@@ -156,12 +161,13 @@ const unsubscribe = async (req, res) => {
 }
 const addFilm = async (req, res) => {
   try {
+    const start = Date.now();
 
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
       return res.status(400).json(errors.array())
     }
-    const list = await ListModel.findOne({_id: req.body._id})
+    const list = await ListModel.findOne({_id: req.body.listId})
     if (!list) {
       return res.status(400).json({
         message: 'Список не знайдено'
@@ -173,11 +179,14 @@ const addFilm = async (req, res) => {
         message: 'Фільм уже доданий'
       })
     } else {
-      const newFilm = await ListModel.updateOne({_id: req.body._id}, {$push: {films: req.body.filmId}})
+      const newFilm = await ListModel.updateOne({_id: req.body.listId}, {$push: {films: req.body.filmId}})
 
       console.log(newFilm)
     }
+    const end = Date.now();
+    const responseTime = end - start;
 
+    console.log(`Час відклику запиту addFilm: ${responseTime} мс`);
     res.json({
       success: true
     })

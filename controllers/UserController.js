@@ -105,7 +105,7 @@ exports.getUsers = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-
+    // const start = Date.now();
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
 
@@ -113,13 +113,19 @@ exports.login = async (req, res) => {
         message: errors.errors[0].msg
       })
     }
+
     const user = await UserModel.findOne({email: req.body.email})
     // console.log(user)
     if (!user) {
+      // const end = Date.now();
+      // const responseTime = end - start;
+      //
+      // console.log(`Час відклику запиту: ${responseTime} мс`);
       return res.status(400).json(
         {
           message: 'Користувача не знайдено'
         })
+
     }
     const isValidPassword = await bcrypt.compare(req.body.password, user._doc.password)
     if (!isValidPassword) {
@@ -127,12 +133,20 @@ exports.login = async (req, res) => {
         {
           message: 'Невірна адреса пошти або пароль'
         })
+      // const end = Date.now();
+      // const responseTime = end - start;
+      //
+      // console.log(`Час відклику запиту: ${responseTime} мс`);
     }
     const token = jwt.sign({
       _id: user._id
     }, process.env.JWT_SECRET, {
       expiresIn: '30d'
     })
+    // const end = Date.now();
+    // const responseTime = end - start;
+    //
+    // console.log(`Час відклику запиту: ${responseTime} мс`);
     res.json({
       success: true,
       token: token
@@ -144,12 +158,14 @@ exports.login = async (req, res) => {
 
 exports.register = async (req, res) => {
   try {
+    const start = Date.now();
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
       return res.status(400).json({
         message: errors.errors[0].msg
       })
     }
+
     const password = req.body.password
     const salt = await bcrypt.genSalt(10)
     const passwordHash = await bcrypt.hash(password, salt)
@@ -165,6 +181,10 @@ exports.register = async (req, res) => {
     }, process.env.JWT_SECRET, {
       expiresIn: '30d'
     })
+    const end = Date.now();
+    const responseTime = end - start;
+
+    console.log(`Час відклику запиту: ${responseTime} мс`);
     res.json({
       success: true,
       token: token
@@ -196,7 +216,6 @@ exports.getProfile = async (req, res) => {
       user = await UserModel.findOne({_id: req.userId}, {password: 0}).populate('favoriteFilms').exec()
     }
 
-    // console.log(user)
     if (!user) {
       return res.status(403).json({
         message: 'Користувача не знайдено'
@@ -308,6 +327,7 @@ exports.updateProfile = async (req, res) => {
 }
 exports.subscribe = async (req, res) => {
   try {
+    const start = Date.now();
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -335,11 +355,14 @@ exports.subscribe = async (req, res) => {
       // console.log(subUser)
       // console.log(user)
     }
+    const end = Date.now();
+    const responseTime = end - start;
 
+    console.log(`Час відклику запиту subscribe: ${responseTime} мс`);
     res.json({
       success: true
     })
-    saveSubNotification(req.body._id, req.userId)
+    // saveSubNotification(req.userId,req.body._id)
   } catch (err) {
     console.log(err)
   }
@@ -405,6 +428,7 @@ exports.unsubscribe = async (req, res) => {
 
 exports.likeFilm = async (req, res) => {
   try {
+    const start = Date.now();
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -428,7 +452,10 @@ exports.likeFilm = async (req, res) => {
       const newListFilmItem = await FilmModel.updateOne({_id: req.body.filmId}, {$set: {isFavorite: true}}, {new: true})
       console.log(newListFilmItem)
     }
+    const end = Date.now();
+    const responseTime = end - start;
 
+    console.log(`Час відклику запиту: ${responseTime} мс`);
     res.json({
       success: true
     })

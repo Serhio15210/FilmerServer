@@ -53,8 +53,8 @@ const checkFilm=(data,item)=>{
       //     }
       //   }else return
       // })
-      console.log('ids',arrayIds)
-      // console.log('array',array)
+      // console.log('ids',arrayIds)
+      console.log('array',array)
       FilmModel.create(array)
         .then(docs => {
           // console.log(docs,docs.map(doc => doc._id))

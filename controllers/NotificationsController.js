@@ -106,23 +106,25 @@ exports.saveSubNotification = async (userId, subId ) => {
       title: `У вас новий підписник!`,
       text: `${user.userName} підписався(лась) на вас.`,
       isRead:false,
-      userId: userId
+
+      userId: subId
     })
     const notification = await doc.save()
 
     if (!notification){
       console.log('Notification error')
     }else {
-      await sendPushNotification(user.fcmToken, {
-        title: notification.title,
-        body: notification.text,
-      })
-      await UserModel.updateOne({_id: userId}, {
-        $push: {
-          notifications: notification._id
-        }
-      })
-
+      if (subUser.fcmToken) {
+        await sendPushNotification(subUser.fcmToken, {
+          title: notification.title,
+          body: notification.text,
+        })
+        await UserModel.updateOne({_id: subId}, {
+          $push: {
+            notifications: notification._id
+          }
+        })
+      }
     }
 
   } catch (err) {

@@ -13,7 +13,7 @@ const checkFilm= async (req, res, next) => {
 
     }
     let film = await FilmModel.findOne({userId: req.userId, imdb_id: req.body.imdb_id})
-    // console.log('body',req.body,req.body._id)
+    console.log('body',req.userId,req.body.imdb_id)
     if (!film) {
       film = new FilmModel({
         imdb_id: req.body.imdb_id,
