@@ -1,30 +1,31 @@
 const ListModel = require("../models/List.js");
 const {validationResult} = require("express-validator");
+const FilmModel = require("../models/Film");
 
 const createList = async (req, res) => {
   try {
-    const start = Date.now();
+
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
       return res.status(400).json(errors.array())
     }
+    console.log(req.body)
     const list = await ListModel.findOne({name: req.body.name})
     if (list) {
       return res.status(400).json({
-        message: 'Список створено!'
+        message: 'Такий список вже створено!'
       })
     }
     const doc = new ListModel({
       name: req.body.name,
+      description:req.body.description,
+      mode:req.body.mode,
       films: req.body.films || [],
       userId: req.userId
 
     })
     const newList = await doc.save()
-    const end = Date.now();
-    const responseTime = end - start;
 
-    console.log(`Час відклику запиту createList: ${responseTime} мс`);
     res.json({
       success: true,
       _id: newList._id
@@ -37,11 +38,12 @@ const getAll = async (req, res) => {
   let lists
   try {
     if (req.params.id) {
-      lists = await ListModel.find({userId: req.params.id}).populate('films').exec()
+      lists = await ListModel.find({userId: req.params.id}).lean().populate('films').exec()
     } else {
-      lists = await ListModel.find({userId: req.userId}).populate('films').exec()
+      lists = await ListModel.find({userId: req.userId}).lean().populate('films').exec()
     }
 
+    // console.log(lists)
     res.json({
       success: true,
       lists: lists
@@ -57,12 +59,38 @@ const getById = async (req, res) => {
     if (!errors.isEmpty()) {
       return res.status(400).json(errors.array())
     }
-    const list = await ListModel.findById(req.params.id).populate('films').exec()
-    if (!list) {
+    const idList = await ListModel.findById(req.params.id).exec();
+
+    if (!idList) {
       return res.status(400).json({
         message: 'Список не знайдено'
       })
     }
+
+
+    const userId=idList.userId
+    const list = await ListModel.findById(req.params.id).populate({
+      path: 'films',
+      select: {
+        _id: 1,
+        title: 1,
+        poster: 1,
+        imdb_id:1,
+        userId: {$elemMatch: { $eq: userId }},
+        isFavorites: {$elemMatch: { userId:{$eq: userId }}},
+        rates: { $elemMatch: { userId: { $eq: userId } } }, // Выбираем только оценку текущего пользователя
+        comments: { $elemMatch: { userId: { $eq: userId } } } // Выбираем только комментарии текущего пользователя
+      }
+    }
+     ).populate({
+      path:'userId',
+      select:{
+        _id:1,
+        userName:1,
+      }
+    }).exec()
+
+
     res.json({
       success: true,
       list: list
@@ -98,9 +126,22 @@ const updateById = async (req, res) => {
     if (!errors.isEmpty()) {
       return res.status(400).json(errors.array())
     }
-    const list = await ListModel.findByIdAndUpdate(req.params.id, {
-      name: req.body.name
-    })
+    console.log(req.body)
+    let list
+    if (req.body.films?.length>0) {
+       list = await ListModel.findByIdAndUpdate(req.params.id, {
+        name: req.body.name,
+        description: req.body.description,
+        mode: req.body.mode,
+        films: req.body.films
+      })
+    }else {
+      list = await ListModel.findByIdAndUpdate(req.params.id, {
+        name: req.body.name,
+        description: req.body.description,
+        mode: req.body.mode
+      })
+    }
     if (!list) {
       return res.status(400).json({
         message: 'Список не знайдено'
@@ -161,8 +202,8 @@ const unsubscribe = async (req, res) => {
 }
 const addFilm = async (req, res) => {
   try {
-    const start = Date.now();
-
+    // const start = Date.now();
+    console.log(req.body.listId,req.body.film)
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
       return res.status(400).json(errors.array())
@@ -183,12 +224,50 @@ const addFilm = async (req, res) => {
 
       console.log(newFilm)
     }
-    const end = Date.now();
-    const responseTime = end - start;
-
-    console.log(`Час відклику запиту addFilm: ${responseTime} мс`);
+    // const end = Date.now();
+    // const responseTime = end - start;
+    //
+    // console.log(`Час відклику запиту addFilm: ${responseTime} мс`);
     res.json({
       success: true
+    })
+  } catch (err) {
+    console.log(err)
+  }
+}
+const createFilm = async (req, res) => {
+  try {
+
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      return res.status(400).json(errors.array())
+    }
+    let film = await FilmModel.findOneAndUpdate(
+        {
+          imdb_id: req.body.imdb_id,
+          userId: {$elemMatch: { $eq: req.userId }},
+        },
+        {
+          $setOnInsert: { // Устанавливаем начальные значения при создании нового документа
+            imdb_id: req.body.imdb_id,
+            poster: req.body.poster,
+            title: req.body.title,
+            isSerial: req.body.isSerial || false,
+            userId: [req.userId],
+            rates: [],
+            comments: [],
+            isFavorites: []
+          }
+        },
+        {
+          upsert: true, // Создаем новый документ, если не найден
+          new: true, // Возвращаем обновленный документ
+          runValidators: true // Запускаем валидацию модели
+        }
+    );
+    res.json({
+      success: true,
+      film:film
     })
   } catch (err) {
     console.log(err)
@@ -207,13 +286,33 @@ const addFilms = async (req, res) => {
         message: 'Список не знайдено'
       })
     }
-    // const i = await ListModel.find({_id: req.body._id}).populate('films').exec()
-    // console.log(i[0])
-    // if (list.films.includes(req.body.filmId)) {
-    //   return res.status(400).json({
-    //     message: 'Film has already added'
-    //   })
-    // } else {
+    req.body.films.map(async item => {
+      let film = await FilmModel.findOneAndUpdate(
+          {
+            imdb_id: item.imdb_id,
+            userId: {$elemMatch: {$eq: req.userId}},
+          },
+          {
+            $setOnInsert: { // Устанавливаем начальные значения при создании нового документа
+              imdb_id: item.imdb_id,
+              poster: item.poster,
+              title: item.title,
+              isSerial: item.isSerial || false,
+              userId: [req.userId],
+              rates: [],
+              comments: [],
+              isFavorites: []
+            }
+          },
+          {
+            upsert: true, // Создаем новый документ, если не найден
+            new: true, // Возвращаем обновленный документ
+            runValidators: true // Запускаем валидацию модели
+          }
+      );
+
+    })
+
     const newFilm = await ListModel.updateOne(
       {_id: req.body._id},
       {$push: {films: {$each: req.body.films}}})
@@ -267,5 +366,6 @@ module.exports = {
   deleteById,
   getById,
   getAll,
-  createList
+  createList,
+  createFilm
 }

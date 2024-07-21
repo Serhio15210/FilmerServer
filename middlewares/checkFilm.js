@@ -12,21 +12,32 @@ const checkFilm= async (req, res, next) => {
       })
 
     }
-    let film = await FilmModel.findOne({userId: req.userId, imdb_id: req.body.imdb_id})
-    console.log('body',req.userId,req.body.imdb_id)
-    if (!film) {
-      film = new FilmModel({
-        imdb_id: req.body.imdb_id,
-        poster: req.body.poster,
-        title: req.body.title,
-        rate:req.body.rate||0,
-        comment:req.body.comment||'',
-        isSerial:req.body.isSerial||false,
-        isFavorite:req.body.isFavorite||false,
-        userId: req.userId
-      })
-      await film.save()
-    }
+    // console.log(req.body)
+    let film = await FilmModel.findOneAndUpdate(
+        {
+          imdb_id: req.body.film.imdb_id,
+          userId: {$elemMatch: { $eq: req.userId }},
+        },
+        {
+          $setOnInsert: { // Устанавливаем начальные значения при создании нового документа
+            imdb_id: req.body.film.imdb_id,
+            poster: req.body.film.poster,
+            title: req.body.film.title,
+            isSerial: req.body.film.isSerial || false,
+            userId: [req.userId],
+            rates: [],
+            comments: [],
+            isFavorites: []
+          }
+        },
+        {
+          upsert: true, // Создаем новый документ, если не найден
+          new: true, // Возвращаем обновленный документ
+          runValidators: true // Запускаем валидацию модели
+        }
+    );
+    console.log(film)
+
     req.body.filmId=film._id
 
     next()

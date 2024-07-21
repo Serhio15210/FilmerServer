@@ -26,8 +26,8 @@ const idHeaderValidator=[
 ]
 const filmUpdateValidator=[
   body('imdb_id','imdb_id is required').isString() ,
-  body('comment',' invalid comment ').isString(),
-  body('rate',' invalid rate ').isNumeric()
+  // body('comment',' invalid comment ').isString(),
+  // body('rate',' invalid rate ').isNumeric()
 ]
 const filmValidator=[
   // body('imdb_id','invalid film id').isString().isLength({min:6}),

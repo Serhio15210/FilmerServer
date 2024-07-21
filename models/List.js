@@ -5,6 +5,15 @@ const ListModel = new mongoose.Schema({
     type:String,
     required:true
   },
+  description:{
+    type:String,
+    default:''
+  },
+  mode:{
+    type:String,
+    required:true,
+    default:'public'
+  },
   subscribers:{
     type:[mongoose.Schema.Types.ObjectId],
     default:[],

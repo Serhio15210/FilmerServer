@@ -47,11 +47,11 @@ const UserModel= new mongoose.Schema({
     default:[],
     ref:'List'
   },
-  favoriteFilms:{
-    type:[mongoose.Schema.Types.ObjectId],
-    default:[],
-    ref:'Film'
-  },
+  // favoriteFilms:{
+  //   type:[mongoose.Schema.Types.ObjectId],
+  //   default:[],
+  //   ref:'Film'
+  // },
   avatar:{
     type:String,
     default:''

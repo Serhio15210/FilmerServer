@@ -115,7 +115,7 @@ exports.login = async (req, res) => {
     }
 
     const user = await UserModel.findOne({email: req.body.email})
-    // console.log(user)
+
     if (!user) {
       // const end = Date.now();
       // const responseTime = end - start;
@@ -140,7 +140,7 @@ exports.login = async (req, res) => {
     }
     const token = jwt.sign({
       _id: user._id
-    }, process.env.JWT_SECRET, {
+    }, 'secret123', {
       expiresIn: '30d'
     })
     // const end = Date.now();
@@ -178,7 +178,7 @@ exports.register = async (req, res) => {
     const user = await doc.save()
     const token = jwt.sign({
       _id: user._id
-    }, process.env.JWT_SECRET, {
+    }, 'secret123', {
       expiresIn: '30d'
     })
     const end = Date.now();
@@ -209,11 +209,12 @@ exports.register = async (req, res) => {
 }
 exports.getProfile = async (req, res) => {
   let user
+
   try {
     if (req.params.id) {
-      user = await UserModel.findOne({_id: req.params.id}, {password: 0}).populate('favoriteFilms').exec()
+      user = await UserModel.findOne({_id: req.params.id}, {password: 0})
     } else {
-      user = await UserModel.findOne({_id: req.userId}, {password: 0}).populate('favoriteFilms').exec()
+      user = await UserModel.findOne({_id: req.userId}, {password: 0})
     }
 
     if (!user) {
@@ -233,16 +234,16 @@ exports.getProfile = async (req, res) => {
 exports.getFavorites = async (req, res) => {
   try {
 
-    const user = await UserModel.findById(req.userId).populate('favoriteFilms').exec()
+    const films = await FilmModel.find({userId: req.userId})
     // console.log('user',user)
-    if (!user) {
+    if (!films) {
       return res.status(403).json({
-        message: 'Користувача не знайдено'
+        message: 'Фільмів не знайдено'
       })
     } else {
       return res.json({
         success: true,
-        favoriteFilms: user.favoriteFilms
+        favoriteFilms: films
       })
     }
   } catch (err) {
@@ -252,17 +253,35 @@ exports.getFavorites = async (req, res) => {
 exports.getActivities = async (req, res) => {
   try {
     const user = await FilmModel.find({
-      $and: [
-        {userId: {$eq: req.userId}},
+      userId: { $elemMatch: { $eq: req.userId } },
+      $or: [
         {
-          $or: [
-            {rate: {$gt: 0}},
-            {comment: {$regex: /.{1,}/}}
-          ]
+          rates: {
+            $elemMatch: {
+              userId: { $eq: req.userId },
+              rate: { $gt: 0 }
+            }
+          }
+        },
+        {
+          comments: {
+            $elemMatch: {
+              userId: { $eq: req.userId },
+              comment: { $gt: 1 }
+            }
+          }
         }
       ]
-    }).sort({updatedAt: -1}).limit(10)
-    // console.log('user',user)
+    }).sort({updatedAt: -1}).limit(10).select({
+      title: 1, // включаем другие нужные поля
+      poster: 1,
+      imdb_id:1,
+      userId:{ $elemMatch: { $eq: req.userId } },
+      isFavorites:{ $elemMatch: { userId: req.userId } },
+      rates: { $elemMatch: { userId: req.userId } },
+      comments: { $elemMatch: { userId: req.userId } }
+    })
+    console.log('user',user[0].comments)
     if (!user) {
       return res.status(403).json({
         message: 'Користувача не знайдено'
@@ -443,15 +462,15 @@ exports.likeFilm = async (req, res) => {
     }
     // const i = await ListModel.find({_id: req.body._id}).populate('films').exec()
     // console.log(i[0])
-    if (list?.favoriteFilms?.includes(req.body.filmId)) {
-      return res.status(400).json({
-        message: 'Фільм уже доданий'
-      })
-    } else {
-      const newFilm = await UserModel.updateOne({_id: req.userId}, {$push: {favoriteFilms: req.body.filmId}})
+    // if (list?.favoriteFilms?.includes(req.body.filmId)) {
+    //   return res.status(400).json({
+    //     message: 'Фільм уже доданий'
+    //   })
+    // } else {
+      // const newFilm = await UserModel.updateOne({_id: req.userId}, {$push: {favoriteFilms: req.body.filmId}})
       const newListFilmItem = await FilmModel.updateOne({_id: req.body.filmId}, {$set: {isFavorite: true}}, {new: true})
       console.log(newListFilmItem)
-    }
+    // }
     const end = Date.now();
     const responseTime = end - start;
 
@@ -472,19 +491,24 @@ exports.likeFilms = async (req, res) => {
         message: errors.errors[0].msg
       })
     }
-    const list = await UserModel.findOne({_id: req.userId})
-    if (!list) {
-      return res.status(400).json({
-        message: 'Користувача не знайдено'
+    if (req.body.films?.length > 0) {
+      req.body.films.map(async item => {
+        await FilmModel.updateOne({_id: item.filmId}, {$set: {isFavorite: true}}, {new: true})
       })
     }
+    // const list = await ListModel.findOne({_id: req.userId})
+    // if (!list) {
+    //   return res.status(400).json({
+    //     message: 'Користувача не знайдено'
+    //   })
+    // }
     // const i = await ListModel.find({_id: req.body._id}).populate('films').exec()
     // console.log(i[0])
-    if (req.body.films?.length > 0) {
-      await UserModel.updateOne(
-        {_id: req.userId},
-        {$push: {favoriteFilms: {$each: req.body.films}}})
-    }
+    // if (req.body.films?.length > 0) {
+    //   await UserModel.updateOne(
+    //     {_id: req.userId},
+    //     {$push: {favoriteFilms: {$each: req.body.films}}})
+    // }
 
 
     res.json({
@@ -513,7 +537,7 @@ exports.deleteFilm = async (req, res) => {
         message: 'Користувача не знайдено'
       })
     } else {
-      await UserModel.findOneAndUpdate({_id: req.userId}, {$pull: {favoriteFilms: req.body.filmId}})
+      // await UserModel.findOneAndUpdate({_id: req.userId}, {$pull: {favoriteFilms: req.body.filmId}})
       const newListFilmItem = await FilmModel.updateOne({_id: req.body.filmId}, {$set: {isFavorite: false}})
     }
     res.json({

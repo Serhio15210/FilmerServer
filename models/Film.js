@@ -6,13 +6,27 @@ const FilmModel = new mongoose.Schema({
     type:String,
     required:true
   },
-  comment:{
-    type:String,
-    default:''
+  comments:{
+    type:[{
+      userId:{
+        type:mongoose.Schema.Types.ObjectId,
+        required:true,
+        ref:'User'
+      },
+      comment:String
+    }],
+    default:[]
   },
-  rate:{
-    type:Number,
-    default:0
+  rates:{
+    type:[{
+      userId:{
+        type:mongoose.Schema.Types.ObjectId,
+        required:true,
+        ref:'User'
+      },
+      rate:Number
+    }],
+    default:[]
   },
   title:{
     type:String,
@@ -26,12 +40,19 @@ const FilmModel = new mongoose.Schema({
     type:Boolean,
     default:false
   },
-  isFavorite:{
-    type:Boolean,
-    default:false
+  isFavorites:{
+    type:[{
+      userId:{
+        type:mongoose.Schema.Types.ObjectId,
+        required:true,
+        ref:'User'
+      },
+      isFavorite:Boolean
+    }],
+    default:[]
   },
   userId:{
-    type:mongoose.Schema.Types.ObjectId,
+    type:[mongoose.Schema.Types.ObjectId],
     required:true,
     ref:'User'
   },
