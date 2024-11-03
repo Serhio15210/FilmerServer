@@ -50,11 +50,13 @@ exports.markAsRead = async (req, res) => {
 exports.saveRateNotification = async (userId, film ) => {
   try {
     const user = await UserModel.findOne({_id: userId}).populate('subscribers').exec()
+    const users = await UserModel.find({fcmToken:{ $ne: '' } }).lean()
     // console.log(user)
     // sendPushNotification( user.fcmToken, {
     //   title: 'asdasdasdasda',
     //   body: ``,
     // })
+
     const doc = new NotificationModel({
       title: `${user.userName} оцінив "${film.title}"`,
       text: film.comment,
@@ -71,19 +73,20 @@ exports.saveRateNotification = async (userId, film ) => {
       console.log('Notification error')
     }else {
 
-      if (user?.subscribers?.length>0){
-        user.subscribers.map(async item => {
-          if (item.fcmToken) {
+      const notBody=(film.rate && notification.text)?`${film.rate}/5: ${notification.text}`:`${notification.text||`${film.rate}/5`}`
+      if (users?.length>0){
+        users.map(async item => {
+
             await sendPushNotification(item.fcmToken, {
               title: notification.title,
-              body: notification.text,
+              body: notBody,
             })
             await UserModel.updateOne({_id: item?._id}, {
               $push: {
                 notifications: notification._id
               }
             })
-          }
+
           // sendPushNotification( user.fcmToken, {
           //   title: notification.title,
           //   body: ``,
@@ -94,7 +97,7 @@ exports.saveRateNotification = async (userId, film ) => {
     }
 
   } catch (err) {
-    console.log(err)
+    console.log('push error',err)
   }
 }
 exports.saveSubNotification = async (userId, subId ) => {

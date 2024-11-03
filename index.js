@@ -52,7 +52,7 @@ app.listen(PORT, (err) => {
 app.use('/auth', authRouter)
 app.use('/lists', listRouter)
 app.use('/films', filmRouter)
-
+app.use('/static', express.static('static'));
 app.get('/subscribers/:id', UserController.getSubscribers)
 app.get('/subscriptions/:id', UserController.getSubscriptions)
 

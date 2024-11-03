@@ -7,13 +7,11 @@ const {Types} = require("mongoose");
 
 
 const getAll = async (req, res) => {
-
-    const sort = req.params.sort === 'rateHigh' ? {rate: -1} : req.params.sort === 'rateLow' ? {rate: 1} : req.params.sort === 'asc' ? {title: 'asc'} : req.params.sort === 'desc' ? {title: 'desc'} : ''
-    let films
+    const sortOption = req.params.sort;
+    const rateFilter = parseInt(req.params.rate);
     const userId = req.userId; // предполагаем, что userId берется из запроса
-    const sortOption = req.params.sort; // предполагаем, что параметр sort берется из запроса
-
-// Определяем сортировку на основе параметра sortOption
+    console.log(req.params, req.userId)
+    // Определяем сортировку на основе параметра sortOption
     let sortCriteria;
     switch (sortOption) {
         case 'rateHigh':
@@ -31,25 +29,23 @@ const getAll = async (req, res) => {
         default:
             sortCriteria = {}; // если сортировка не указана, не сортируем
     }
+
     try {
-        if (parseInt(req.params.rate) > 0) {
+        let query = {userId: req.userId};
 
-            films = await FilmModel.paginate({userId: req.userId, rate: req.params.rate}, {
-                page: parseInt(req.params.page),
-                limit: 30,
-                sort: sortCriteria
-            })
-        } else {
-
-            films = await FilmModel.paginate({userId: req.userId}, {
-                page: parseInt(req.params.page),
-                limit: 30,
-                sort: sortCriteria
-            })
-
-            // .sort(sort).skip(req.params.page==='1'?0:parseInt(req.params.page)*20).limit(30)
-            // console.log(films)
+        if (rateFilter > 0) {
+            query['rates'] = {
+                $elemMatch: {
+                    rate: rateFilter
+                }
+            };
         }
+
+        const films = await FilmModel.paginate(query, {
+            page: parseInt(req.params.page),
+            limit: 50,
+            sort: sortCriteria
+        });
 
         res.json({
             success: true,
@@ -57,13 +53,14 @@ const getAll = async (req, res) => {
             totalPages: films.totalPages,
             hasPrevPage: films.hasPrevPage,
             hasNextPage: films.hasNextPage,
-        })
+        });
     } catch (err) {
-        console.log(err)
+        console.log(err);
+        res.status(500).json({success: false, message: 'Ошибка сервера'});
     }
 }
 const getUserAll = async (req, res) => {
-    console.log(req.params, req.userId)
+
     const sort = req.params.sort === 'rateHigh' ? {rate: -1}
         : req.params.sort === 'rateLow' ? {rate: 1}
             : req.params.sort === 'asc' ? {title: 'asc'}
@@ -155,8 +152,8 @@ const getRatingStatistics = async (req, res) => {
             userId: {$elemMatch: {$eq: req.userId}},
             // "rates.userId": req.userId
         }).lean()
-        const empty=films.filter(item=>item?.rates?.length===0).length
-        film0+=empty
+        const empty = films.filter(item => item?.rates?.length === 0).length
+        film0 += empty
         films?.map(film => {
             film?.rates?.map(item => {
                 switch (item.rate) {
@@ -182,7 +179,7 @@ const getRatingStatistics = async (req, res) => {
             })
         })
 
-         const sum=film0+film1+film2+film3+film4+film5
+        const sum = film0 + film1 + film2 + film3 + film4 + film5
         res.json({
             success: true,
             film0,
@@ -191,7 +188,7 @@ const getRatingStatistics = async (req, res) => {
             film3,
             film4,
             film5,
-            total:sum
+            total: sum
 
         })
     } catch (err) {
@@ -256,9 +253,15 @@ const updateFilm = async (req, res) => {
                     runValidators: true // Запускаем валидацию модели
                 }
             );
-            console.log('f2', film)
+            // console.log('f2', film)
         }
-        // await saveRateNotification(req.userId, film)
+        await saveRateNotification(req.userId, {
+            title: film.title,
+            comment: req.body.comment,
+            rate: req.body.rate,
+            imdb_id: film.imdb_id,
+            isSerial: film.isSerial,
+        })
 
         res.json({
             success: true
@@ -285,7 +288,7 @@ const getFilm = async (req, res) => {
 
         const userRating = film?.rates?.find(item => item?.userId?.equals(req.userId))
         const userComments = film?.comments?.find(item => item?.userId?.equals(req.userId))
-        const userFavorites = film?.isFavorites?.find(item => item?.userId?.equals(req.userId))
+        const userFavorites = film?.isFavorites?.find(item => item?.userId?.equals(req.userId)).isFavorite
 
         const filmData = {
             ...film,
@@ -294,7 +297,7 @@ const getFilm = async (req, res) => {
             isFavorites: !!userFavorites
         };
 
-        console.log(filmData)
+        // console.log(filmData)
         res.json({
             success: true,
             film: filmData
@@ -343,13 +346,13 @@ const getReviews = async (req, res) => {
         }
         const user = await UserModel.findById(req.userId)
         const film = await FilmModel.find({
-            userId: { $elemMatch: {$ne: req.userId} },
+            userId: {$elemMatch: {$ne: req.userId}},
             $or: [
                 {
                     rates: {
                         $elemMatch: {
                             userId: {$ne: req.userId},
-                            rate: { $gt: 0 }
+                            rate: {$gt: 0}
                         }
                     }
                 },
@@ -357,7 +360,7 @@ const getReviews = async (req, res) => {
                     comments: {
                         $elemMatch: {
                             userId: {$ne: req.userId},
-                            comment: { $gt: 1 }
+                            comment: {$gt: 1}
                         }
                     }
                 }
@@ -366,14 +369,13 @@ const getReviews = async (req, res) => {
         // console.log(user.subscriptions)
 
 
-         const reviews=[]
-        film[0]?.userId?.map(item=>{
+        const reviews = []
+        film[0]?.userId?.map(item => {
 
-            const rate=film[0].rates.filter(rate=>rate?.userId.equals(item._id))[0].rate
-            const comment=film[0].comments.filter(comment=>comment?.userId.equals(item._id))[0].comment
-            reviews.push({user:item,rate,comment})
+            const rate = film[0].rates.filter(rate => rate?.userId.equals(item._id))[0].rate
+            const comment = film[0].comments.filter(comment => comment?.userId.equals(item._id))[0].comment
+            reviews.push({user: item, rate, comment})
         })
-
 
 
         if (!film) {

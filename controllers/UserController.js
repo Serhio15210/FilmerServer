@@ -6,6 +6,9 @@ const ListModel = require("../models/List.js");
 const FilmModel = require("../models/Film.js");
 const {sendPushNotification} = require("../fcm/services");
 const {saveSubNotification} = require("./NotificationsController");
+const fs = require('fs');
+const path = require('path');
+const {upload} = require("../static/imageUtils");
 exports.saveFcmToken = async (req, res) => {
   try {
     const errors = validationResult(req)
@@ -321,27 +324,46 @@ exports.deleteProfile = async (req, res) => {
 }
 exports.updateProfile = async (req, res) => {
   try {
-    const errors = validationResult(req)
+    const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
         message: errors.errors[0].msg
-      })
+      });
     }
-    const list = await UserModel.findByIdAndUpdate(req.params.id, {
-      userName: req.body.userName,
-      password: req.body.password,
-      avatar: req.body.avatar
-    })
-    if (!list) {
+    const user = await UserModel.findById(req.userId);
+
+    if (!user) {
       return res.status(400).json({
         message: 'Користувача не знайдено'
-      })
+      });
     }
+
+    if (req.file && user.avatar) {
+      const oldAvatarPath = path.join(__dirname, '../static/avatars', user.avatar);
+      console.log(oldAvatarPath)
+      fs.unlink(oldAvatarPath, (err) => {
+        if (err) console.log('Не вдалося видалити старий аватар:', err);
+      });
+    }
+    const updatedData = {
+      userName: req.body.userName,
+      password: req.body.password
+    };
+
+    if (req.file) {
+      updatedData.avatar = req.file.filename; // Сохраняем путь к файлу в базе данных
+    }
+
+    const updUser = await UserModel.findByIdAndUpdate(req.userId, updatedData);
+
+    upload.single('avatar')
     res.json({
-      success: true
-    })
+      success: true,
+      avatarUrl: req.file ? req.file.path : updUser.avatar // Вернуть путь к аватару
+    });
   } catch (err) {
-    console.log(err)
+    console.log(err);
+    res.status(500).json({ message: 'Ошибка сервера' });
   }
 }
 exports.subscribe = async (req, res) => {

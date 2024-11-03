@@ -11,7 +11,7 @@ const registerValidator=[
   body('avatar','incorrect avatar url').optional().isURL()
 ]
 const updateValidator=[
-  body('password','password must have min 5 symbols').isLength({min:5}),
+  body('password','password must have min 5 symbols').isLength({min:5}).optional(),
   body('userName','userName must have min 5 symbols').isLength({min:5}),
 
 ]

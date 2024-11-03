@@ -3,7 +3,7 @@ const LastMovieModel = require("../models/LastMovie");
 const UserModel = require("../models/User");
 const firebase = require("firebase-admin");
 const serviceAccount = require("../serviceAccount.json")
-const dbUrl = "https://filmer-98352-default-rtdb.firebaseio.com";
+const dbUrl = "https://chat-143ce-default-rtdb.firebaseio.com";
 const axios = require("axios")
 const {fetchAndSaveNewMovies} = require("./services");
 
