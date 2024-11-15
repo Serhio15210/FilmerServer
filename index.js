@@ -39,9 +39,6 @@ app.use('/static', express.static('static'));
 app.get('/subscribers/:id', UserController.getSubscribers)
 app.get('/subscriptions/:id', UserController.getSubscriptions)
 
-module.exports = (req, res) => {
-  res.status(200).send('Сервер работает!');
-};
 
 
 // const storage = multer.diskStorage({
