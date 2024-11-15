@@ -17,7 +17,7 @@ const schedule = require('node-schedule');
 const authRouter = require('./routes/authRouter');
 const listRouter = require('./routes/listRouter');
 const filmRouter = require('./routes/filmRouter');
-require("dotenv").config();
+require('dotenv').config();
 const {
   filmUpdateValidator,
   filmValidator, idHeaderValidator,
