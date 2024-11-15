@@ -2,36 +2,19 @@ const express = require("express");
 const Express = require("express");
 const mongoose =require("mongoose")
 const cors =require("cors")
-const firebase = require("firebase-admin");
-const checkAuth =require("./middlewares/checkAuth.js")
+
 const UserController =require("./controllers/UserController.js");
-const ListController  =require("./controllers/ListController.js");
-const NotificationModel  =require("./models/Notification");
-const NotificationsController  =require("./controllers/NotificationsController");
-const checkFilm  =require("./middlewares/checkFilm.js");
-const checkDeleteFilm =require("./middlewares/checkDeleteFilm.js");
-const FilmController=require("./controllers/FilmController.js");
-const checkList =require("./middlewares/checkList.js");
-const checkSubAuth =require("./middlewares/checkSubAuth.js")
-const schedule = require('node-schedule');
+
 const authRouter = require('./routes/authRouter');
 const listRouter = require('./routes/listRouter');
 const filmRouter = require('./routes/filmRouter');
 require('dotenv').config();
-const {
-  filmUpdateValidator,
-  filmValidator, idHeaderValidator,
-  idValidator,
-  listValidator,
-  loginValidator,
-  registerValidator, updateValidator
-} = require("./validations/validations.js")
 
-const {startMovieMonitoring, sendPushNotification, deleteOldNotifications}=require("./fcm/services")
-const UserModel = require("./models/User");
+
+
 const PORT=process.env.PORT||8000
 const MONGOOSE_DB=process.env.MONGOOSE_DB
-const multer = require('multer');
+
 mongoose.connect('mongodb+srv://serhio:1356810@filmer.pvpls.mongodb.net/?retryWrites=true&w=majority').then(res => {
   console.log("connect to db")
 })
