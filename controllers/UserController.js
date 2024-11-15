@@ -108,6 +108,7 @@ exports.getUsers = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
+
     // const start = Date.now();
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
@@ -284,7 +285,7 @@ exports.getActivities = async (req, res) => {
       rates: { $elemMatch: { userId: req.userId } },
       comments: { $elemMatch: { userId: req.userId } }
     })
-    console.log('user',user[0].comments)
+
     if (!user) {
       return res.status(403).json({
         message: 'Користувача не знайдено'
