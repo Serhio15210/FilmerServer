@@ -1,6 +1,11 @@
 const mongoose = require("mongoose");
 const mongoosePaginate = require("mongoose-paginate-v2");
 const UserModel= new mongoose.Schema({
+  // googleId:{
+  //   type:String,
+  //   unique:true,
+  //   required:false
+  // },
   userName:{
     type:String,
     required:true,
@@ -47,11 +52,7 @@ const UserModel= new mongoose.Schema({
     default:[],
     ref:'List'
   },
-  // favoriteFilms:{
-  //   type:[mongoose.Schema.Types.ObjectId],
-  //   default:[],
-  //   ref:'Film'
-  // },
+
   avatar:{
     type:String,
     default:''

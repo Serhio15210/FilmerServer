@@ -346,6 +346,7 @@ const getReviews = async (req, res) => {
         }
         const user = await UserModel.findById(req.userId)
         const film = await FilmModel.find({
+            imdb_id:req.body.imdb_id,
             userId: {$elemMatch: {$ne: req.userId}},
             $or: [
                 {

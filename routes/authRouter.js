@@ -17,6 +17,7 @@ router.get('/getNotifications', checkAuth, NotificationsController.getNotificati
 router.patch('/markAsRead/:id', checkAuth, NotificationsController.markAsRead)
 router.get('/getUsers/:page/:query?', checkAuth, UserController.getUsers)
 router.post('/login', UserController.login)
+router.post('/login/google', UserController.loginWithGoogle)
 router.post('/register', registerValidator, UserController.register)
 router.get('/getProfile', checkAuth, UserController.getProfile)
 router.get('/getFavorites', checkAuth, UserController.getFavorites)

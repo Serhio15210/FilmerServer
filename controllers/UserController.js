@@ -9,6 +9,53 @@ const {saveSubNotification} = require("./NotificationsController");
 const fs = require('fs');
 const path = require('path');
 const {upload} = require("../static/imageUtils");
+const { OAuth2Client } = require('google-auth-library');
+const client = new OAuth2Client('215809157367-l20tdno96miq1f0kff02im2f3a3c0vmj.apps.googleusercontent.com'); // Замените на ваш Google Client ID
+
+exports.loginWithGoogle = async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ message: 'Google token is required' });
+    }
+
+    // Проверяем Google токен
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: '215809157367-l20tdno96miq1f0kff02im2f3a3c0vmj.apps.googleusercontent.com', // Замените на ваш Google Client ID
+    });
+
+    const payload = ticket.getPayload();
+    const { email, name, sub: googleId } = payload;
+
+    let user = await UserModel.findOne({ email });
+    if (!user) {
+      // Если пользователь не найден, создаем нового
+      user = new UserModel({
+        email,
+        userName:name,
+        password: await bcrypt.hash('random_password', 10), // Генерация случайного пароля, если нужен
+      });
+      await user.save();
+    }
+
+    // Генерация JWT токена
+    const authToken = jwt.sign(
+        { _id: user._id },
+        'secret123', // Секретный ключ
+        { expiresIn: '30d' }
+    );
+
+    res.json({
+      success: true,
+      token: authToken
+    });
+  } catch (err) {
+    console.error('Error during Google login:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
 exports.saveFcmToken = async (req, res) => {
   try {
     const errors = validationResult(req)
@@ -109,7 +156,6 @@ exports.getUsers = async (req, res) => {
 exports.login = async (req, res) => {
   try {
 
-    // const start = Date.now();
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
 
@@ -121,10 +167,6 @@ exports.login = async (req, res) => {
     const user = await UserModel.findOne({email: req.body.email})
 
     if (!user) {
-      // const end = Date.now();
-      // const responseTime = end - start;
-      //
-      // console.log(`Час відклику запиту: ${responseTime} мс`);
       return res.status(400).json(
         {
           message: 'Користувача не знайдено'
@@ -137,20 +179,12 @@ exports.login = async (req, res) => {
         {
           message: 'Невірна адреса пошти або пароль'
         })
-      // const end = Date.now();
-      // const responseTime = end - start;
-      //
-      // console.log(`Час відклику запиту: ${responseTime} мс`);
     }
     const token = jwt.sign({
       _id: user._id
     }, 'secret123', {
       expiresIn: '30d'
     })
-    // const end = Date.now();
-    // const responseTime = end - start;
-    //
-    // console.log(`Час відклику запиту: ${responseTime} мс`);
     res.json({
       success: true,
       token: token
