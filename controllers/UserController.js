@@ -7,10 +7,11 @@ const FilmModel = require("../models/Film.js");
 const {sendPushNotification} = require("../fcm/services");
 const {saveSubNotification} = require("./NotificationsController");
 const fs = require('fs');
+require('dotenv').config();
 const path = require('path');
 const {upload} = require("../static/imageUtils");
 const { OAuth2Client } = require('google-auth-library');
-const client = new OAuth2Client('215809157367-l20tdno96miq1f0kff02im2f3a3c0vmj.apps.googleusercontent.com'); // Замените на ваш Google Client ID
+const client = new OAuth2Client(process.env.GOOGLE_ID);
 
 exports.loginWithGoogle = async (req, res) => {
   try {
@@ -23,7 +24,7 @@ exports.loginWithGoogle = async (req, res) => {
     // Проверяем Google токен
     const ticket = await client.verifyIdToken({
       idToken: token,
-      audience: '215809157367-l20tdno96miq1f0kff02im2f3a3c0vmj.apps.googleusercontent.com', // Замените на ваш Google Client ID
+      audience: process.env.GOOGLE_ID, // Замените на ваш Google Client ID
     });
 
     const payload = ticket.getPayload();
