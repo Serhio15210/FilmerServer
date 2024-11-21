@@ -21,7 +21,7 @@ exports.loginWithGoogle = async (req, res) => {
       return res.status(400).json({ message: 'Google token is required' });
     }
 
-    // Проверяем Google токен
+
     const ticket = await client.verifyIdToken({
       idToken: token,
       audience: process.env.GOOGLE_ID, // Замените на ваш Google Client ID
@@ -32,7 +32,7 @@ exports.loginWithGoogle = async (req, res) => {
 
     let user = await UserModel.findOne({ email });
     if (!user) {
-      // Если пользователь не найден, создаем нового
+
       user = new UserModel({
         email,
         userName:name,
@@ -41,10 +41,10 @@ exports.loginWithGoogle = async (req, res) => {
       await user.save();
     }
 
-    // Генерация JWT токена
+
     const authToken = jwt.sign(
         { _id: user._id },
-        'secret123', // Секретный ключ
+        process.env.SECRET_PHRASE, // Секретный ключ
         { expiresIn: '30d' }
     );
 
@@ -183,7 +183,7 @@ exports.login = async (req, res) => {
     }
     const token = jwt.sign({
       _id: user._id
-    }, 'secret123', {
+    }, process.env.SECRET_PHRASE, {
       expiresIn: '30d'
     })
     res.json({
@@ -217,7 +217,7 @@ exports.register = async (req, res) => {
     const user = await doc.save()
     const token = jwt.sign({
       _id: user._id
-    }, 'secret123', {
+    }, process.env.SECRET_PHRASE, {
       expiresIn: '30d'
     })
     const end = Date.now();

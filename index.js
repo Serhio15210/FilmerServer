@@ -15,7 +15,7 @@ require('dotenv').config();
 const PORT=process.env.PORT||8000
 const MONGOOSE_DB=process.env.MONGOOSE_DB
 
-mongoose.connect('mongodb+srv://serhio:1356810@filmer.pvpls.mongodb.net/?retryWrites=true&w=majority').then(res => {
+mongoose.connect(`${MONGOOSE_DB}`).then(res => {
   console.log("connect to db")
 })
 const app = express()

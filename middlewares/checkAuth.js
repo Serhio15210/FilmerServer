@@ -1,15 +1,12 @@
 const jwt =require("jsonwebtoken");
-const {sendPushNotification} = require("../fcm/services");
-const firebase = require("firebase-admin");
+require('dotenv').config();
 
  const checkAuth = (req, res, next) => {
   const token = (req.headers.authorization || '').replace('/Bearer\s?/', '')
 
-   // console.log('token',token)
   if (token) {
-    //   console.log(jwt.verify(token, 'secret123'))
     try {
-      const decoded = jwt.verify(token, 'secret123')
+      const decoded = jwt.verify(token, process.env.SECRET_PHRASE)
 
       if (req.body._id){
         // console.log('body')
